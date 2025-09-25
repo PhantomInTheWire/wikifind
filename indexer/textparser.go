@@ -69,6 +69,13 @@ func (p *WikiTextParser) parseWikiText(text string) {
 		p.parseText(infobox, INFOBOX)
 	}
 
+	// Extract geobox
+	geoboxRegex := regexp.MustCompile(`\{\{geobox[^}]+\}\}`)
+	geoboxes := geoboxRegex.FindAllString(text, -1)
+	for _, geobox := range geoboxes {
+		p.parseText(geobox, GEOBOX)
+	}
+
 	// Extract links
 	linkRegex := regexp.MustCompile(`\[\[([^\]|]+)`)
 	links := linkRegex.FindAllStringSubmatch(text, -1)
@@ -81,6 +88,7 @@ func (p *WikiTextParser) parseWikiText(text string) {
 	// Parse remaining body text
 	text = categoryRegex.ReplaceAllString(text, "")
 	text = infoboxRegex.ReplaceAllString(text, "")
+	text = geoboxRegex.ReplaceAllString(text, "")
 	text = linkRegex.ReplaceAllString(text, "")
 
 	p.parseText(text, BODY)

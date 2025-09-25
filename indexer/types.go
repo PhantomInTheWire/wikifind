@@ -46,12 +46,12 @@ func (idx *InvertedIndex) Add(term, docID string, termObj TermObject) {
 	idx.Index[term][docID] = existing
 }
 
-// Field constants (bit flags)
+// Field constants (bit flags) - matching Java order
 const (
-	BODY     = 1 << 3 // 8
-	LINKS    = 1 << 2 // 4
-	INFOBOX  = 1 << 1 // 2
 	GEOBOX   = 1 << 0 // 1
 	CATEGORY = 1 << 4 // 16
 	TITLE    = 1 << 5 // 32
+	BODY     = 1 << 3 // 8
+	LINKS    = 1 << 2 // 4
+	INFOBOX  = 1 << 1 // 2
 )
