@@ -48,9 +48,10 @@ func TestWikiTextParser_Parse(t *testing.T) {
 		{
 			name: "page with markup",
 			page: &WikiPage{
-				ID:    "2",
-				Title: "Apple",
-				Text:  "An apple is a fruit. [[Category:Fruits]] {{Infobox fruit|color=red}} [[Link to something]].",
+				ID:      "2",
+				Title:   "Apple",
+				Text:    "An apple is a fruit. [[Category:Fruits]] {{Infobox fruit|color=red|type=edible}} [[Link to something]].",
+				Infobox: make(map[string]string),
 			},
 			expected: map[string]bool{
 				"appl":     true, // stemmed
@@ -58,6 +59,10 @@ func TestWikiTextParser_Parse(t *testing.T) {
 				"categori": true,
 				"link":     true,
 				"someth":   true,
+				"color":    true,
+				"red":      true,
+				"type":     true,
+				"edibl":    true,
 			},
 		},
 		{
@@ -83,6 +88,14 @@ func TestWikiTextParser_Parse(t *testing.T) {
 
 			for term := range tt.expected {
 				assert.Contains(t, terms, term, "Expected term %q to be present", term)
+			}
+
+			// Check infobox if present
+			if tt.page.Infobox != nil {
+				if tt.name == "page with markup" {
+					assert.Equal(t, "red", tt.page.Infobox["color"])
+					assert.Equal(t, "edible", tt.page.Infobox["type"])
+				}
 			}
 		})
 	}

@@ -7,9 +7,10 @@ import (
 
 // Core data structures
 type WikiPage struct {
-	ID    string
-	Title string
-	Text  string
+	ID      string
+	Title   string
+	Text    string
+	Infobox map[string]string
 }
 
 type TermObject struct {

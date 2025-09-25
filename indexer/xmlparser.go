@@ -52,9 +52,10 @@ func (parser *WikiXMLParser) Parse(xmlPath string) error {
 			}
 
 			page := &WikiPage{
-				ID:    xmlPage.ID,
-				Title: xmlPage.Title,
-				Text:  xmlPage.Text,
+				ID:      xmlPage.ID,
+				Title:   xmlPage.Title,
+				Text:    xmlPage.Text,
+				Infobox: make(map[string]string),
 			}
 
 			parser.processPage(page)

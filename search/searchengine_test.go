@@ -20,6 +20,8 @@ func TestSearchEngine_parseQuery(t *testing.T) {
 		{"single word", "hello", []string{"hello"}},
 		{"two words", "hello world", []string{"hello", "world"}},
 		{"empty", "", nil},
+		{"with stop words", "the apple is red", []string{"appl", "red"}},
+		{"short words", "a an i", nil},
 	}
 
 	for _, tt := range tests {
@@ -100,6 +102,7 @@ func TestSearchEngine_getPostings(t *testing.T) {
 	require.NoError(t, se.Initialize())
 	defer se.Close()
 
+	// Test successful getPostings
 	postings, err := se.getPostings("test")
 	require.NoError(t, err)
 
@@ -108,6 +111,14 @@ func TestSearchEngine_getPostings(t *testing.T) {
 		"doc2": {Fields: 32, Frequency: 2},
 	}
 	assert.Equal(t, expectedPostings, postings)
+
+	// Test empty term
+	_, err = se.getPostings("")
+	assert.Error(t, err)
+
+	// Test invalid char
+	_, err = se.getPostings("1test")
+	assert.Error(t, err)
 
 	// Test Search
 	results, err := se.Search("test", 10)
@@ -118,6 +129,11 @@ func TestSearchEngine_getPostings(t *testing.T) {
 	results2, err := se.Search("nonexistent", 10)
 	require.NoError(t, err)
 	assert.Empty(t, results2)
+
+	// Test Search with no valid terms
+	results3, err := se.Search("the a an", 10)
+	assert.Error(t, err)
+	assert.Nil(t, results3)
 }
 
 func TestEditDistance(t *testing.T) {

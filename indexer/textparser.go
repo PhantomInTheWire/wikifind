@@ -21,37 +21,30 @@ func IsStopWord(word string) bool {
 // Text parser
 type WikiTextParser struct {
 	stemmer *Stemmer
-	pageID  string
-	title   string
-	text    string
+	page    *WikiPage
 	terms   map[string]TermObject
 }
 
 func NewWikiTextParser(page *WikiPage) *WikiTextParser {
 	return &WikiTextParser{
 		stemmer: NewStemmer(),
-		pageID:  page.ID,
-		title:   page.Title,
-		text:    page.Text,
+		page:    page,
 		terms:   make(map[string]TermObject),
 	}
 }
 
 func (p *WikiTextParser) Parse() map[string]TermObject {
 	// Parse title
-	p.parseText(p.title, TITLE)
+	p.parseText(p.page.Title, TITLE)
 
 	// Parse main text
-	p.parseWikiText(p.text)
+	p.parseWikiText(p.page.Text)
 
 	return p.terms
 }
 
 func (p *WikiTextParser) parseWikiText(text string) {
 	text = strings.ToLower(text)
-
-	// Remove wiki markup
-	text = p.removeWikiMarkup(text)
 
 	// Extract categories
 	categoryRegex := regexp.MustCompile(`\[\[category:([^\]]+)\]\]`)
@@ -63,14 +56,16 @@ func (p *WikiTextParser) parseWikiText(text string) {
 	}
 
 	// Extract infobox
-	infoboxRegex := regexp.MustCompile(`\{\{infobox[^}]+\}\}`)
-	infoboxes := infoboxRegex.FindAllString(text, -1)
-	for _, infobox := range infoboxes {
-		p.parseText(infobox, INFOBOX)
+	infoboxRegex := regexp.MustCompile(`\{\{infobox([^}]*)\}\}`)
+	infoboxes := infoboxRegex.FindAllStringSubmatch(text, -1)
+	for _, match := range infoboxes {
+		if len(match) > 1 {
+			p.parseInfobox(match[1])
+		}
 	}
 
 	// Extract geobox
-	geoboxRegex := regexp.MustCompile(`\{\{geobox[^}]+\}\}`)
+	geoboxRegex := regexp.MustCompile(`\{\{geobox[^}]*\}\}`)
 	geoboxes := geoboxRegex.FindAllString(text, -1)
 	for _, geobox := range geoboxes {
 		p.parseText(geobox, GEOBOX)
@@ -84,6 +79,9 @@ func (p *WikiTextParser) parseWikiText(text string) {
 			p.parseText(match[1], LINKS)
 		}
 	}
+
+	// Remove wiki markup
+	text = p.removeWikiMarkup(text)
 
 	// Parse remaining body text
 	text = categoryRegex.ReplaceAllString(text, "")
@@ -112,6 +110,27 @@ func (p *WikiTextParser) removeWikiMarkup(text string) string {
 	text = htmlRegex.ReplaceAllString(text, "")
 
 	return text
+}
+
+func (p *WikiTextParser) parseInfobox(infoboxText string) {
+	// Parse key=value pairs
+	parts := strings.Split(infoboxText, "|")
+	for _, part := range parts {
+		part = strings.TrimSpace(part)
+		if strings.Contains(part, "=") {
+			kv := strings.SplitN(part, "=", 2)
+			if len(kv) == 2 {
+				key := strings.TrimSpace(kv[0])
+				value := strings.TrimSpace(kv[1])
+				if key != "" && value != "" {
+					p.page.Infobox[strings.ToLower(key)] = strings.ToLower(value)
+					// Index key and value
+					p.parseText(key, INFOBOX)
+					p.parseText(value, INFOBOX)
+				}
+			}
+		}
+	}
 }
 
 func (p *WikiTextParser) parseText(text string, field byte) {
