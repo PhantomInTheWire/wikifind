@@ -65,4 +65,33 @@ func TestSearchEngine_getPostings(t *testing.T) {
 	} else {
 		t.Error("Missing doc1")
 	}
+
+	// Test Search
+	results, err := se.Search("test", 10)
+	if err != nil {
+		t.Fatalf("Search failed: %v", err)
+	}
+	if len(results) != 2 {
+		t.Errorf("Expected 2 results, got %d", len(results))
+	}
+}
+
+func TestEditDistance(t *testing.T) {
+	tests := []struct {
+		str1, str2 string
+		expected   int
+	}{
+		{"kitten", "kitten", 0},
+		{"kitten", "sitting", 3},
+		{"", "", 0},
+		{"a", "b", 1},
+		{"abc", "def", 3},
+	}
+
+	for _, test := range tests {
+		result := editDistance(test.str1, test.str2)
+		if result != test.expected {
+			t.Errorf("editDistance(%q, %q) = %d, want %d", test.str1, test.str2, result, test.expected)
+		}
+	}
 }

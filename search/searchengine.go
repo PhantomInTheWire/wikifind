@@ -108,6 +108,46 @@ func (se *SearchEngine) Search(query string, limit int) ([]SearchResult, error) 
 	return searchResults, nil
 }
 
+func editDistance(str1, str2 string) int {
+	distance := make([][]int, len(str1)+1)
+	for i := range distance {
+		distance[i] = make([]int, len(str2)+1)
+	}
+
+	for i := 0; i <= len(str1); i++ {
+		distance[i][0] = i
+	}
+	for j := 1; j <= len(str2); j++ {
+		distance[0][j] = j
+	}
+
+	for i := 1; i <= len(str1); i++ {
+		for j := 1; j <= len(str2); j++ {
+			cost := 0
+			if str1[i-1] != str2[j-1] {
+				cost = 1
+			}
+			distance[i][j] = min(
+				distance[i-1][j]+1,      // deletion
+				distance[i][j-1]+1,      // insertion
+				distance[i-1][j-1]+cost, // substitution
+			)
+		}
+	}
+
+	return distance[len(str1)][len(str2)]
+}
+
+func min(a, b, c int) int {
+	if a < b && a < c {
+		return a
+	}
+	if b < c {
+		return b
+	}
+	return c
+}
+
 func (se *SearchEngine) parseQuery(query string) []string {
 	stemmer := indexer.NewStemmer()
 	wordRegex := regexp.MustCompile(`[a-z]+`)
