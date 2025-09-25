@@ -1,0 +1,21 @@
+# Go
+/bin/
+/vendor/
+/*.exe
+/*.dll
+/*.so
+/*.dylib
+*.test
+*.out
+coverage.out
+
+# IDEs
+.idea/
+.vscode/
+*.swp
+
+# Environment
+.env
+
+# macOS
+.DS_Store
