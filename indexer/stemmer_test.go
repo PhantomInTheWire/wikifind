@@ -20,6 +20,13 @@ func TestStemmer_Stem(t *testing.T) {
 		{"beautiful", "beautiful", "beauti"},
 		{"empty", "", ""},
 		{"single", "a", "a"},
+		{"walking", "walking", "walk"},
+		{"happiness", "happiness", "happi"},
+		{"trouble", "trouble", "troubl"},
+		{"national", "national", "nation"},
+		{"generate", "generate", "gener"},
+		{"agreed", "agreed", "agre"},
+		{"disabled", "disabled", "disabl"},
 	}
 
 	for _, tt := range tests {

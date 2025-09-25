@@ -43,4 +43,16 @@ func TestEndToEnd(t *testing.T) {
 	// Check output contains results
 	assert.NotEmpty(t, output, "Search should produce output")
 	assert.True(t, strings.Contains(string(output), "results"), "Output should contain 'results'")
+
+	// Search for another term
+	cmd = exec.Command("../wikifind", "search", indexPath)
+	stdin, err = cmd.StdinPipe()
+	require.NoError(t, err)
+	go func() {
+		defer func() { _ = stdin.Close() }()
+		_, _ = stdin.Write([]byte("india\n"))
+	}()
+	output2, err := cmd.CombinedOutput()
+	require.NoError(t, err, "Search command failed: %s", output2)
+	assert.NotEmpty(t, output2, "Search should produce output")
 }

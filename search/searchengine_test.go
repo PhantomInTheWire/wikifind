@@ -157,3 +157,23 @@ func TestEditDistance(t *testing.T) {
 		})
 	}
 }
+
+func TestMin(t *testing.T) {
+	tests := []struct {
+		name     string
+		a, b, c  int
+		expected int
+	}{
+		{"a min", 1, 2, 3, 1},
+		{"b min", 2, 1, 3, 1},
+		{"c min", 3, 2, 1, 1},
+		{"equal", 1, 1, 1, 1},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := min(tt.a, tt.b, tt.c)
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+}

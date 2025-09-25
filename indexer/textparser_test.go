@@ -66,6 +66,20 @@ func TestWikiTextParser_Parse(t *testing.T) {
 			},
 		},
 		{
+			name: "page with infobox no equals",
+			page: &WikiPage{
+				ID:      "3",
+				Title:   "Test",
+				Text:    "{{infobox test|key1|key2=value2}}",
+				Infobox: make(map[string]string),
+			},
+			expected: map[string]bool{
+				"test": true,
+				"kei":  true, // key2 stemmed
+				"valu": true, // value2 stemmed
+			},
+		},
+		{
 			name: "page with wiki markup to remove",
 			page: &WikiPage{
 				ID:    "3",
@@ -95,6 +109,9 @@ func TestWikiTextParser_Parse(t *testing.T) {
 				if tt.name == "page with markup" {
 					assert.Equal(t, "red", tt.page.Infobox["color"])
 					assert.Equal(t, "edible", tt.page.Infobox["type"])
+				}
+				if tt.name == "page with infobox no equals" {
+					assert.Equal(t, "value2", tt.page.Infobox["key2"])
 				}
 			}
 		})
