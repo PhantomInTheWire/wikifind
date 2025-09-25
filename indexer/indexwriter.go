@@ -30,10 +30,10 @@ func (parser *WikiXMLParser) writeIndexFile(char rune) error {
 	if err != nil {
 		return err
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	writer := bufio.NewWriter(file)
-	defer writer.Flush()
+	defer func() { _ = writer.Flush() }()
 
 	// Collect terms starting with this character
 	var terms []string
@@ -60,12 +60,12 @@ func (parser *WikiXMLParser) writeIndexFile(char rune) error {
 		sort.Strings(docIDs)
 
 		// Write term and postings
-		fmt.Fprintf(writer, "%s", term)
+		_, _ = fmt.Fprintf(writer, "%s", term)
 		for _, docID := range docIDs {
 			termObj := postings[docID]
-			fmt.Fprintf(writer, ":%s$%s", docID, termObj.String())
+			_, _ = fmt.Fprintf(writer, ":%s$%s", docID, termObj.String())
 		}
-		fmt.Fprintln(writer)
+		_, _ = fmt.Fprintln(writer)
 	}
 
 	return nil

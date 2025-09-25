@@ -31,7 +31,7 @@ func (parser *WikiXMLParser) Parse(xmlPath string) error {
 	if err != nil {
 		return err
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	decoder := xml.NewDecoder(file)
 	pageCount := 0
