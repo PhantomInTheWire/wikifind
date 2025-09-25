@@ -9,10 +9,10 @@ func TestStemmer_Stem(t *testing.T) {
 		input    string
 		expected string
 	}{
-		{"running", "runn"}, // simplified stemmer
+		{"running", "run"},
 		{"cats", "cat"},
 		{"jumped", "jump"},
-		{"beautiful", "beautiful"},
+		{"beautiful", "beauti"},
 		{"", ""},
 		{"a", "a"},
 	}
