@@ -26,20 +26,6 @@ func (s *Stemmer) add(ch rune) {
 	s.i++
 }
 
-func (s *Stemmer) addString(w string) {
-	runes := []rune(w)
-	wLen := len(runes)
-	if s.i+wLen >= len(s.b) {
-		new_b := make([]rune, s.i+wLen+INC)
-		copy(new_b, s.b)
-		s.b = new_b
-	}
-	for _, ch := range runes {
-		s.b[s.i] = ch
-		s.i++
-	}
-}
-
 func (s *Stemmer) toString() string {
 	return string(s.b[:s.i_end])
 }
