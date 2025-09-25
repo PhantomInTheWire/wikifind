@@ -1,26 +1,31 @@
 package indexer
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+)
 
 func TestStemmer_Stem(t *testing.T) {
 	s := NewStemmer()
 
 	tests := []struct {
+		name     string
 		input    string
 		expected string
 	}{
-		{"running", "run"},
-		{"cats", "cat"},
-		{"jumped", "jump"},
-		{"beautiful", "beauti"},
-		{"", ""},
-		{"a", "a"},
+		{"running", "running", "run"},
+		{"cats", "cats", "cat"},
+		{"jumped", "jumped", "jump"},
+		{"beautiful", "beautiful", "beauti"},
+		{"empty", "", ""},
+		{"single", "a", "a"},
 	}
 
-	for _, test := range tests {
-		result := s.Stem(test.input)
-		if result != test.expected {
-			t.Errorf("Stem(%q) = %q, want %q", test.input, result, test.expected)
-		}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := s.Stem(tt.input)
+			assert.Equal(t, tt.expected, result)
+		})
 	}
 }

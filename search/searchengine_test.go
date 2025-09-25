@@ -5,22 +5,74 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/PhantomInTheWire/wikifind/indexer"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestSearchEngine_parseQuery(t *testing.T) {
-	se := &SearchEngine{}
-
-	terms := se.parseQuery("hello world")
-
-	if len(terms) != 2 {
-		t.Errorf("Expected 2 terms, got %d", len(terms))
+	tests := []struct {
+		name     string
+		query    string
+		expected []string
+	}{
+		{"single word", "hello", []string{"hello"}},
+		{"two words", "hello world", []string{"hello", "world"}},
+		{"empty", "", nil},
 	}
 
-	expected := []string{"hello", "world"}
-	for i, term := range terms {
-		if term != expected[i] {
-			t.Errorf("Expected %q, got %q", expected[i], term)
-		}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			se := &SearchEngine{}
+			terms := se.parseQuery(tt.query)
+			assert.Equal(t, tt.expected, terms)
+		})
+	}
+}
+
+func TestSearchEngine_Initialize(t *testing.T) {
+	tests := []struct {
+		name      string
+		setupFunc func(string)
+		expectErr bool
+	}{
+		{
+			name: "successful initialize",
+			setupFunc: func(indexPath string) {
+				require.NoError(t, os.MkdirAll(indexPath, 0755))
+				for char := 'a'; char <= 'z'; char++ {
+					filename := filepath.Join(indexPath, fmt.Sprintf("index%c.idx", char))
+					require.NoError(t, os.WriteFile(filename, []byte{}, 0644))
+				}
+			},
+			expectErr: false,
+		},
+		{
+			name: "missing index files",
+			setupFunc: func(indexPath string) {
+				require.NoError(t, os.MkdirAll(indexPath, 0755))
+				// Don't create files
+			},
+			expectErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tempDir := t.TempDir()
+			indexPath := filepath.Join(tempDir, "index")
+			tt.setupFunc(indexPath)
+
+			se := NewSearchEngine(indexPath)
+			err := se.Initialize()
+			if tt.expectErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+				se.Close()
+			}
+		})
 	}
 }
 
@@ -30,68 +82,62 @@ func TestSearchEngine_getPostings(t *testing.T) {
 	indexPath := filepath.Join(tempDir, "index")
 
 	// Create index directory
-	_ = os.MkdirAll(indexPath, 0755)
+	require.NoError(t, os.MkdirAll(indexPath, 0755))
 
 	// Create dummy index files for a-z
 	for char := 'a'; char <= 'z'; char++ {
 		filename := filepath.Join(indexPath, fmt.Sprintf("index%c.idx", char))
 		file, err := os.Create(filename)
-		if err != nil {
-			t.Fatal(err)
-		}
+		require.NoError(t, err)
 		if char == 't' {
-			_, _ = file.WriteString("test:doc1$8$1:doc2$32$2\n")
+			_, err = file.WriteString("test:doc1$8$1:doc2$32$2\n")
+			require.NoError(t, err)
 		}
-		_ = file.Close()
+		require.NoError(t, file.Close())
 	}
 
 	se := NewSearchEngine(indexPath)
-	_ = se.Initialize()
+	require.NoError(t, se.Initialize())
 	defer se.Close()
 
 	postings, err := se.getPostings("test")
-	if err != nil {
-		t.Fatalf("getPostings failed: %v", err)
-	}
+	require.NoError(t, err)
 
-	if len(postings) != 2 {
-		t.Errorf("Expected 2 postings, got %d", len(postings))
+	expectedPostings := map[string]indexer.TermObject{
+		"doc1": {Fields: 8, Frequency: 1},
+		"doc2": {Fields: 32, Frequency: 2},
 	}
-
-	if obj, ok := postings["doc1"]; ok {
-		if obj.Fields != 8 || obj.Frequency != 1 {
-			t.Errorf("Wrong term object for doc1: %+v", obj)
-		}
-	} else {
-		t.Error("Missing doc1")
-	}
+	assert.Equal(t, expectedPostings, postings)
 
 	// Test Search
 	results, err := se.Search("test", 10)
-	if err != nil {
-		t.Fatalf("Search failed: %v", err)
-	}
-	if len(results) != 2 {
-		t.Errorf("Expected 2 results, got %d", len(results))
-	}
+	require.NoError(t, err)
+	assert.Len(t, results, 2)
+
+	// Test Search with no results
+	results2, err := se.Search("nonexistent", 10)
+	require.NoError(t, err)
+	assert.Empty(t, results2)
 }
 
 func TestEditDistance(t *testing.T) {
 	tests := []struct {
-		str1, str2 string
-		expected   int
+		name     string
+		str1     string
+		str2     string
+		expected int
 	}{
-		{"kitten", "kitten", 0},
-		{"kitten", "sitting", 3},
-		{"", "", 0},
-		{"a", "b", 1},
-		{"abc", "def", 3},
+		{"identical", "kitten", "kitten", 0},
+		{"different", "kitten", "sitting", 3},
+		{"empty", "", "", 0},
+		{"single diff", "a", "b", 1},
+		{"all diff", "abc", "def", 3},
 	}
 
-	for _, test := range tests {
-		result := editDistance(test.str1, test.str2)
-		if result != test.expected {
-			t.Errorf("editDistance(%q, %q) = %d, want %d", test.str1, test.str2, result, test.expected)
-		}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := editDistance(tt.str1, tt.str2)
+			assert.Equal(t, tt.expected, result)
+		})
 	}
 }

@@ -1,36 +1,73 @@
 package indexer
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+)
 
 func TestInvertedIndex_Add(t *testing.T) {
-	idx := NewInvertedIndex()
+	tests := []struct {
+		name     string
+		term     string
+		docID    string
+		termObjs []TermObject
+		expected map[string]map[string]TermObject
+	}{
+		{
+			name:  "add single term",
+			term:  "test",
+			docID: "doc1",
+			termObjs: []TermObject{
+				{Fields: BODY, Frequency: 1},
+			},
+			expected: map[string]map[string]TermObject{
+				"test": {
+					"doc1": {Fields: BODY, Frequency: 1},
+				},
+			},
+		},
+		{
+			name:  "merge terms",
+			term:  "test",
+			docID: "doc1",
+			termObjs: []TermObject{
+				{Fields: BODY, Frequency: 1},
+				{Fields: BODY, Frequency: 2},
+			},
+			expected: map[string]map[string]TermObject{
+				"test": {
+					"doc1": {Fields: BODY, Frequency: 3},
+				},
+			},
+		},
+	}
 
-	termObj1 := TermObject{Fields: BODY, Frequency: 1}
-	termObj2 := TermObject{Fields: BODY, Frequency: 2}
-
-	idx.Add("test", "doc1", termObj1)
-	idx.Add("test", "doc1", termObj2) // Should merge
-
-	if postings, ok := idx.Index["test"]; ok {
-		if obj, exists := postings["doc1"]; exists {
-			if obj.Frequency != 3 {
-				t.Errorf("Expected frequency 3, got %d", obj.Frequency)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			idx := NewInvertedIndex()
+			for _, obj := range tt.termObjs {
+				idx.Add(tt.term, tt.docID, obj)
 			}
-			if obj.Fields != BODY {
-				t.Errorf("Expected fields %d, got %d", BODY, obj.Fields)
-			}
-		} else {
-			t.Error("Expected doc1 in postings")
-		}
-	} else {
-		t.Error("Expected 'test' term in index")
+			assert.Equal(t, tt.expected, idx.Index)
+		})
 	}
 }
 
 func TestTermObject_String(t *testing.T) {
-	obj := TermObject{Fields: 8, Frequency: 5}
-	expected := "8$5"
-	if obj.String() != expected {
-		t.Errorf("String() = %q, want %q", obj.String(), expected)
+	tests := []struct {
+		name     string
+		obj      TermObject
+		expected string
+	}{
+		{"basic", TermObject{Fields: 8, Frequency: 5}, "8$5"},
+		{"zero", TermObject{Fields: 0, Frequency: 0}, "0$0"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := tt.obj.String()
+			assert.Equal(t, tt.expected, result)
+		})
 	}
 }

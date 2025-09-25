@@ -1,23 +1,34 @@
 package search
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
 
 func TestCompressor_CompressDecompress(t *testing.T) {
-	c := &Compressor{}
-
-	original := []byte("Hello, world! This is a test string for compression.")
-
-	compressed, err := c.Compress(original)
-	if err != nil {
-		t.Fatalf("Compress failed: %v", err)
+	tests := []struct {
+		name     string
+		original []byte
+	}{
+		{"short string", []byte("Hello, world!")},
+		{"long string", []byte("Hello, world! This is a test string for compression. It should be longer to test compression effectiveness.")},
+		{"empty", []byte("")},
+		{"single byte", []byte("a")},
 	}
 
-	decompressed, err := c.Decompress(compressed)
-	if err != nil {
-		t.Fatalf("Decompress failed: %v", err)
-	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			c := &Compressor{}
 
-	if string(decompressed) != string(original) {
-		t.Error("Decompressed data does not match original")
+			compressed, err := c.Compress(tt.original)
+			require.NoError(t, err)
+
+			decompressed, err := c.Decompress(compressed)
+			require.NoError(t, err)
+
+			assert.Equal(t, tt.original, decompressed)
+		})
 	}
 }

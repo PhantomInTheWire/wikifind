@@ -1,43 +1,89 @@
 package indexer
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+)
 
 func TestIsStopWord(t *testing.T) {
 	tests := []struct {
+		name     string
 		word     string
 		expected bool
 	}{
-		{"the", true},
-		{"apple", false},
-		{"a", true},
-		{"", true},
-		{"run", false},
+		{"the", "the", true},
+		{"apple", "apple", false},
+		{"a", "a", true},
+		{"empty", "", true},
+		{"run", "run", false},
 	}
 
-	for _, test := range tests {
-		result := IsStopWord(test.word)
-		if result != test.expected {
-			t.Errorf("IsStopWord(%q) = %v, want %v", test.word, result, test.expected)
-		}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := IsStopWord(tt.word)
+			assert.Equal(t, tt.expected, result)
+		})
 	}
 }
 
 func TestWikiTextParser_Parse(t *testing.T) {
-	page := &WikiPage{
-		ID:    "1",
-		Title: "Test Page",
-		Text:  "This is a test page with some content.",
+	tests := []struct {
+		name     string
+		page     *WikiPage
+		expected map[string]bool // terms that should be present
+	}{
+		{
+			name: "basic page",
+			page: &WikiPage{
+				ID:    "1",
+				Title: "Test Page",
+				Text:  "This is a test page with some content.",
+			},
+			expected: map[string]bool{
+				"test": true,
+				"page": true,
+			},
+		},
+		{
+			name: "page with markup",
+			page: &WikiPage{
+				ID:    "2",
+				Title: "Apple",
+				Text:  "An apple is a fruit. [[Category:Fruits]] {{Infobox fruit|color=red}} [[Link to something]].",
+			},
+			expected: map[string]bool{
+				"appl":     true, // stemmed
+				"fruit":    true,
+				"categori": true,
+				"link":     true,
+				"someth":   true,
+			},
+		},
+		{
+			name: "page with wiki markup to remove",
+			page: &WikiPage{
+				ID:    "3",
+				Title: "Test",
+				Text:  "This is <!-- comment --> text with <ref>reference</ref> and {{template}} and <b>bold</b>.",
+			},
+			expected: map[string]bool{
+				"text": true,
+				"bold": true,
+			},
+		},
 	}
 
-	parser := NewWikiTextParser(page)
-	terms := parser.Parse()
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			parser := NewWikiTextParser(tt.page)
+			terms := parser.Parse()
 
-	if len(terms) == 0 {
-		t.Error("Expected some terms, got none")
-	}
+			assert.NotEmpty(t, terms, "Expected some terms")
 
-	// Check if title term is present
-	if _, ok := terms["test"]; !ok {
-		t.Error("Expected 'test' term from title")
+			for term := range tt.expected {
+				assert.Contains(t, terms, term, "Expected term %q to be present", term)
+			}
+		})
 	}
 }
