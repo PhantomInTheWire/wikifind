@@ -31,8 +31,8 @@ func TestEndToEnd(t *testing.T) {
 		t.Fatal(err)
 	}
 	go func() {
-		defer stdin.Close()
-		stdin.Write([]byte("apple\n"))
+		defer func() { _ = stdin.Close() }()
+		_, _ = stdin.Write([]byte("apple\n"))
 	}()
 	output, err = cmd.CombinedOutput()
 	if err != nil {

@@ -8,6 +8,7 @@
 *.test
 *.out
 coverage.out
+wikifind
 
 # IDEs
 .idea/

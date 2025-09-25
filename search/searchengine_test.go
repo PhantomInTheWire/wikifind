@@ -30,7 +30,7 @@ func TestSearchEngine_getPostings(t *testing.T) {
 	indexPath := filepath.Join(tempDir, "index")
 
 	// Create index directory
-	os.MkdirAll(indexPath, 0755)
+	_ = os.MkdirAll(indexPath, 0755)
 
 	// Create dummy index files for a-z
 	for char := 'a'; char <= 'z'; char++ {
@@ -40,13 +40,13 @@ func TestSearchEngine_getPostings(t *testing.T) {
 			t.Fatal(err)
 		}
 		if char == 't' {
-			file.WriteString("test:doc1$8$1:doc2$32$2\n")
+			_, _ = file.WriteString("test:doc1$8$1:doc2$32$2\n")
 		}
-		file.Close()
+		_ = file.Close()
 	}
 
 	se := NewSearchEngine(indexPath)
-	se.Initialize()
+	_ = se.Initialize()
 	defer se.Close()
 
 	postings, err := se.getPostings("test")
