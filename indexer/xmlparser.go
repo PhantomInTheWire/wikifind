@@ -7,25 +7,6 @@ import (
 	"os"
 )
 
-// XML Parser for Wikipedia dump
-type WikiXMLParser struct {
-	indexPath string
-	index     *InvertedIndex
-}
-
-func NewWikiXMLParser(indexPath string) *WikiXMLParser {
-	return &WikiXMLParser{
-		indexPath: indexPath,
-		index:     NewInvertedIndex(),
-	}
-}
-
-type XMLPage struct {
-	ID    string `xml:"id"`
-	Title string `xml:"title"`
-	Text  string `xml:"revision>text"`
-}
-
 func (parser *WikiXMLParser) Parse(xmlPath string) error {
 	file, err := os.Open(xmlPath)
 	if err != nil {

@@ -18,6 +18,18 @@ type TermObject struct {
 	Frequency int
 }
 
+type XMLPage struct {
+	ID    string `xml:"id"`
+	Title string `xml:"title"`
+	Text  string `xml:"revision>text"`
+}
+
+// XML Parser for Wikipedia dump
+type WikiXMLParser struct {
+	indexPath string
+	index     *InvertedIndex
+}
+
 func (t TermObject) String() string {
 	return fmt.Sprintf("%d$%d", t.Fields, t.Frequency)
 }
@@ -45,6 +57,13 @@ func (idx *InvertedIndex) Add(term, docID string, termObj TermObject) {
 	existing.Fields |= termObj.Fields
 	existing.Frequency += termObj.Frequency
 	idx.Index[term][docID] = existing
+}
+
+func NewWikiXMLParser(indexPath string) *WikiXMLParser {
+	return &WikiXMLParser{
+		indexPath: indexPath,
+		index:     NewInvertedIndex(),
+	}
 }
 
 // Field constants (bit flags) - matching Java order
