@@ -2,9 +2,12 @@ package main
 
 import (
 	"bufio"
+	"context"
 	"fmt"
 	"log"
 	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/PhantomInTheWire/wikifind/indexer"
 	"github.com/PhantomInTheWire/wikifind/search"
@@ -13,7 +16,7 @@ import (
 // Main application
 func main() {
 	if len(os.Args) < 3 {
-		fmt.Println("Usage: wikise <command> <args>")
+		fmt.Println("Usage: wikifind <command> <args>")
 		fmt.Println("Commands:")
 		fmt.Println("  index <xml_file> <index_path>")
 		fmt.Println("  search <index_path>")
@@ -25,7 +28,7 @@ func main() {
 	switch command {
 	case "index":
 		if len(os.Args) != 4 {
-			fmt.Println("Usage: wikise index <xml_file> <index_path>")
+			fmt.Println("Usage: wikifind index <xml_file> <index_path>")
 			os.Exit(1)
 		}
 
@@ -33,9 +36,21 @@ func main() {
 		indexPath := os.Args[3]
 
 		fmt.Printf("Parsing Wikipedia XML dump: %s\n", xmlFile)
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+
+		// Handle Ctrl+C gracefully
+		sigChan := make(chan os.Signal, 1)
+		signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
+		go func() {
+			<-sigChan
+			fmt.Println("\nReceived interrupt signal, cancelling...")
+			cancel()
+		}()
+
 		parser := indexer.NewWikiXMLParser(indexPath)
 
-		if err := parser.Parse(xmlFile); err != nil {
+		if err := parser.Parse(ctx, xmlFile); err != nil {
 			log.Fatalf("Error parsing XML: %v", err)
 		}
 
@@ -43,7 +58,7 @@ func main() {
 
 	case "search":
 		if len(os.Args) != 3 {
-			fmt.Println("Usage: wikise search <index_path>")
+			fmt.Println("Usage: wikifind search <index_path>")
 			os.Exit(1)
 		}
 

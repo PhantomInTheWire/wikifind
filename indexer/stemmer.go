@@ -1,6 +1,9 @@
 package indexer
 
-import "strings"
+import (
+	"strings"
+	"sync"
+)
 
 // Full Porter Stemmer implementation
 type Stemmer struct {
@@ -10,10 +13,27 @@ type Stemmer struct {
 
 const INC = 50
 
+// Object pool for stemmers to reduce memory allocations
+var stemmerPool = sync.Pool{
+	New: func() interface{} {
+		return &Stemmer{
+			b: make([]rune, INC),
+		}
+	},
+}
+
 func NewStemmer() *Stemmer {
-	return &Stemmer{
-		b: make([]rune, INC),
-	}
+	return stemmerPool.Get().(*Stemmer)
+}
+
+func (s *Stemmer) Release() {
+	s.reset()
+	stemmerPool.Put(s)
+}
+
+func (s *Stemmer) reset() {
+	s.b = s.b[:0]
+	s.i, s.i_end, s.j, s.k = 0, 0, 0, 0
 }
 
 func (s *Stemmer) add(ch rune) {

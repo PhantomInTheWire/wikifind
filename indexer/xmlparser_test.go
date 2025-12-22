@@ -1,6 +1,7 @@
 package indexer
 
 import (
+	"context"
 	"path/filepath"
 	"testing"
 
@@ -15,6 +16,7 @@ func TestWikiXMLParser_Parse(t *testing.T) {
 
 	xmlFile := "../cmd/test_data.xml"
 
-	err := parser.Parse(xmlFile)
+	ctx := context.Background()
+	err := parser.Parse(ctx, xmlFile)
 	require.NoError(t, err)
 }

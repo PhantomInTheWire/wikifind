@@ -106,9 +106,9 @@ func TestSearchEngine_getPostings(t *testing.T) {
 	postings, err := se.getPostings("test")
 	require.NoError(t, err)
 
-	expectedPostings := map[string]indexer.TermObject{
-		"doc1": {Fields: 8, Frequency: 1},
-		"doc2": {Fields: 32, Frequency: 2},
+	expectedPostings := map[string]indexer.Posting{
+		"doc1": {Fields: indexer.BODY, Frequency: 1},
+		"doc2": {Fields: indexer.TITLE, Frequency: 2},
 	}
 	assert.Equal(t, expectedPostings, postings)
 

@@ -30,15 +30,15 @@ func TestIsStopWord(t *testing.T) {
 func TestWikiTextParser_Parse(t *testing.T) {
 	tests := []struct {
 		name     string
-		page     *WikiPage
+		doc      *Document
 		expected map[string]bool // terms that should be present
 	}{
 		{
 			name: "basic page",
-			page: &WikiPage{
-				ID:    "1",
-				Title: "Test Page",
-				Text:  "This is a test page with some content.",
+			doc: &Document{
+				ID:      "1",
+				Title:   "Test Page",
+				Content: "This is a test page with some content.",
 			},
 			expected: map[string]bool{
 				"test": true,
@@ -47,11 +47,11 @@ func TestWikiTextParser_Parse(t *testing.T) {
 		},
 		{
 			name: "page with markup",
-			page: &WikiPage{
-				ID:      "2",
-				Title:   "Apple",
-				Text:    "An apple is a fruit. [[Category:Fruits]] {{Infobox fruit|color=red|type=edible}} [[Link to something]].",
-				Infobox: make(map[string]string),
+			doc: &Document{
+				ID:       "2",
+				Title:    "Apple",
+				Content:  "An apple is a fruit. [[Category:Fruits]] {{Infobox fruit|color=red|type=edible}} [[Link to something]].",
+				Metadata: make(map[string]string),
 			},
 			expected: map[string]bool{
 				"appl":     true, // stemmed
@@ -67,11 +67,11 @@ func TestWikiTextParser_Parse(t *testing.T) {
 		},
 		{
 			name: "page with infobox no equals",
-			page: &WikiPage{
-				ID:      "3",
-				Title:   "Test",
-				Text:    "{{infobox test|key1|key2=value2}}",
-				Infobox: make(map[string]string),
+			doc: &Document{
+				ID:       "3",
+				Title:    "Test",
+				Content:  "{{infobox test|key1|key2=value2}}",
+				Metadata: make(map[string]string),
 			},
 			expected: map[string]bool{
 				"test": true,
@@ -81,10 +81,11 @@ func TestWikiTextParser_Parse(t *testing.T) {
 		},
 		{
 			name: "page with wiki markup to remove",
-			page: &WikiPage{
-				ID:    "3",
-				Title: "Test",
-				Text:  "This is <!-- comment --> text with <ref>reference</ref> and {{template}} and <b>bold</b>.",
+			doc: &Document{
+				ID:       "3",
+				Title:    "Test",
+				Content:  "This is <!-- comment --> text with <ref>reference</ref> and {{template}} and <b>bold</b>.",
+				Metadata: make(map[string]string),
 			},
 			expected: map[string]bool{
 				"text": true,
@@ -95,7 +96,7 @@ func TestWikiTextParser_Parse(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			parser := NewWikiTextParser(tt.page)
+			parser := NewWikiTextParser(tt.doc)
 			terms := parser.Parse()
 
 			assert.NotEmpty(t, terms, "Expected some terms")
@@ -104,14 +105,14 @@ func TestWikiTextParser_Parse(t *testing.T) {
 				assert.Contains(t, terms, term, "Expected term %q to be present", term)
 			}
 
-			// Check infobox if present
-			if tt.page.Infobox != nil {
+			// Check metadata if present
+			if tt.doc.Metadata != nil {
 				if tt.name == "page with markup" {
-					assert.Equal(t, "red", tt.page.Infobox["color"])
-					assert.Equal(t, "edible", tt.page.Infobox["type"])
+					assert.Equal(t, "red", tt.doc.Metadata["color"])
+					assert.Equal(t, "edible", tt.doc.Metadata["type"])
 				}
 				if tt.name == "page with infobox no equals" {
-					assert.Equal(t, "value2", tt.page.Infobox["key2"])
+					assert.Equal(t, "value2", tt.doc.Metadata["key2"])
 				}
 			}
 		})

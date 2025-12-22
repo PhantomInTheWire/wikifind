@@ -21,24 +21,26 @@ func IsStopWord(word string) bool {
 // Text parser
 type WikiTextParser struct {
 	stemmer *Stemmer
-	page    *WikiPage
-	terms   map[string]TermObject
+	doc     *Document
+	terms   map[string]Posting
 }
 
-func NewWikiTextParser(page *WikiPage) *WikiTextParser {
+func NewWikiTextParser(doc *Document) *WikiTextParser {
 	return &WikiTextParser{
 		stemmer: NewStemmer(),
-		page:    page,
-		terms:   make(map[string]TermObject),
+		doc:     doc,
+		terms:   make(map[string]Posting),
 	}
 }
 
-func (p *WikiTextParser) Parse() map[string]TermObject {
+func (p *WikiTextParser) Parse() map[string]Posting {
+	defer p.stemmer.Release() // Return stemmer to pool
+
 	// Parse title
-	p.parseText(p.page.Title, TITLE)
+	p.parseText(p.doc.Title, TITLE)
 
 	// Parse main text
-	p.parseWikiText(p.page.Text)
+	p.parseWikiText(p.doc.Content)
 
 	return p.terms
 }
@@ -123,7 +125,7 @@ func (p *WikiTextParser) parseInfobox(infoboxText string) {
 				key := strings.TrimSpace(kv[0])
 				value := strings.TrimSpace(kv[1])
 				if key != "" && value != "" {
-					p.page.Infobox[strings.ToLower(key)] = strings.ToLower(value)
+					p.doc.Metadata[strings.ToLower(key)] = strings.ToLower(value)
 					// Index key and value
 					p.parseText(key, INFOBOX)
 					p.parseText(value, INFOBOX)
@@ -133,7 +135,7 @@ func (p *WikiTextParser) parseInfobox(infoboxText string) {
 	}
 }
 
-func (p *WikiTextParser) parseText(text string, field byte) {
+func (p *WikiTextParser) parseText(text string, field FieldMask) {
 	wordRegex := regexp.MustCompile(`[a-z]+`)
 	words := wordRegex.FindAllString(strings.ToLower(text), -1)
 

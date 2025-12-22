@@ -150,6 +150,8 @@ func min(a, b, c int) int {
 
 func (se *SearchEngine) parseQuery(query string) []string {
 	stemmer := indexer.NewStemmer()
+	defer stemmer.Release() // Return stemmer to pool
+
 	wordRegex := regexp.MustCompile(`[a-z]+`)
 	words := wordRegex.FindAllString(strings.ToLower(query), -1)
 
@@ -163,7 +165,7 @@ func (se *SearchEngine) parseQuery(query string) []string {
 	return terms
 }
 
-func (se *SearchEngine) getPostings(term string) (map[string]indexer.TermObject, error) {
+func (se *SearchEngine) getPostings(term string) (map[string]indexer.Posting, error) {
 	if len(term) == 0 {
 		return nil, fmt.Errorf("empty term")
 	}
@@ -194,7 +196,7 @@ func (se *SearchEngine) getPostings(term string) (map[string]indexer.TermObject,
 
 		if parts[0] == term {
 			// Parse postings
-			postings := make(map[string]indexer.TermObject)
+			postings := make(map[string]indexer.Posting)
 			for i := 1; i < len(parts); i++ {
 				posting := parts[i]
 				dollarIdx := strings.Index(posting, "$")
@@ -205,7 +207,7 @@ func (se *SearchEngine) getPostings(term string) (map[string]indexer.TermObject,
 				docID := posting[:dollarIdx]
 				termData := posting[dollarIdx+1:]
 
-				// Parse term object
+				// Parse posting
 				termParts := strings.Split(termData, "$")
 				if len(termParts) != 2 {
 					continue
@@ -214,8 +216,8 @@ func (se *SearchEngine) getPostings(term string) (map[string]indexer.TermObject,
 				fields, _ := strconv.Atoi(termParts[0])
 				freq, _ := strconv.Atoi(termParts[1])
 
-				postings[docID] = indexer.TermObject{
-					Fields:    byte(fields),
+				postings[docID] = indexer.Posting{
+					Fields:    indexer.FieldMask(fields),
 					Frequency: freq,
 				}
 			}
@@ -223,5 +225,5 @@ func (se *SearchEngine) getPostings(term string) (map[string]indexer.TermObject,
 		}
 	}
 
-	return make(map[string]indexer.TermObject), nil
+	return make(map[string]indexer.Posting), nil
 }
