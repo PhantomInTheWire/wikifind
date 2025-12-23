@@ -5,20 +5,23 @@ import (
 	"strings"
 )
 
-// Stop words
-var stopWords = map[string]bool{
-	"a": true, "an": true, "and": true, "are": true, "as": true, "at": true,
-	"be": true, "by": true, "for": true, "from": true, "has": true, "he": true,
-	"in": true, "is": true, "it": true, "its": true, "of": true, "on": true,
-	"that": true, "the": true, "to": true, "was": true, "were": true, "will": true,
-	"with": true, "would": true, "you": true, "your": true,
+// Stop words - using empty struct for memory-efficient set
+var stopWords = map[string]struct{}{
+	"a": {}, "an": {}, "and": {}, "are": {}, "as": {}, "at": {},
+	"be": {}, "by": {}, "for": {}, "from": {}, "has": {}, "he": {},
+	"in": {}, "is": {}, "it": {}, "its": {}, "of": {}, "on": {},
+	"that": {}, "the": {}, "to": {}, "was": {}, "were": {}, "will": {},
+	"with": {}, "would": {}, "you": {}, "your": {},
 }
 
 func IsStopWord(word string) bool {
-	return len(word) <= 1 || stopWords[strings.ToLower(word)]
+	if len(word) <= 1 {
+		return true
+	}
+	_, exists := stopWords[strings.ToLower(word)]
+	return exists
 }
 
-// Text parser
 type WikiTextParser struct {
 	stemmer *Stemmer
 	doc     *Document
@@ -36,10 +39,8 @@ func NewWikiTextParser(doc *Document) *WikiTextParser {
 func (p *WikiTextParser) Parse() map[string]Posting {
 	defer p.stemmer.Release() // Return stemmer to pool
 
-	// Parse title
 	p.parseText(p.doc.Title, TITLE)
 
-	// Parse main text
 	p.parseWikiText(p.doc.Content)
 
 	return p.terms
@@ -48,7 +49,6 @@ func (p *WikiTextParser) Parse() map[string]Posting {
 func (p *WikiTextParser) parseWikiText(text string) {
 	text = strings.ToLower(text)
 
-	// Extract categories
 	categoryRegex := regexp.MustCompile(`\[\[category:([^\]]+)\]\]`)
 	categories := categoryRegex.FindAllStringSubmatch(text, -1)
 	for _, match := range categories {
@@ -57,7 +57,6 @@ func (p *WikiTextParser) parseWikiText(text string) {
 		}
 	}
 
-	// Extract infobox
 	infoboxRegex := regexp.MustCompile(`\{\{infobox([^}]*)\}\}`)
 	infoboxes := infoboxRegex.FindAllStringSubmatch(text, -1)
 	for _, match := range infoboxes {
@@ -66,14 +65,12 @@ func (p *WikiTextParser) parseWikiText(text string) {
 		}
 	}
 
-	// Extract geobox
 	geoboxRegex := regexp.MustCompile(`\{\{geobox[^}]*\}\}`)
 	geoboxes := geoboxRegex.FindAllString(text, -1)
 	for _, geobox := range geoboxes {
 		p.parseText(geobox, GEOBOX)
 	}
 
-	// Extract links
 	linkRegex := regexp.MustCompile(`\[\[([^\]|]+)`)
 	links := linkRegex.FindAllStringSubmatch(text, -1)
 	for _, match := range links {
@@ -82,10 +79,8 @@ func (p *WikiTextParser) parseWikiText(text string) {
 		}
 	}
 
-	// Remove wiki markup
 	text = p.removeWikiMarkup(text)
 
-	// Parse remaining body text
 	text = categoryRegex.ReplaceAllString(text, "")
 	text = infoboxRegex.ReplaceAllString(text, "")
 	text = geoboxRegex.ReplaceAllString(text, "")
@@ -95,19 +90,15 @@ func (p *WikiTextParser) parseWikiText(text string) {
 }
 
 func (p *WikiTextParser) removeWikiMarkup(text string) string {
-	// Remove comments
 	commentRegex := regexp.MustCompile(`<!--.*?-->`)
 	text = commentRegex.ReplaceAllString(text, "")
 
-	// Remove references
 	refRegex := regexp.MustCompile(`<ref[^>]*>.*?</ref>`)
 	text = refRegex.ReplaceAllString(text, "")
 
-	// Remove templates
 	templateRegex := regexp.MustCompile(`\{\{[^}]*\}\}`)
 	text = templateRegex.ReplaceAllString(text, "")
 
-	// Remove HTML tags
 	htmlRegex := regexp.MustCompile(`<[^>]*>`)
 	text = htmlRegex.ReplaceAllString(text, "")
 
@@ -115,7 +106,6 @@ func (p *WikiTextParser) removeWikiMarkup(text string) string {
 }
 
 func (p *WikiTextParser) parseInfobox(infoboxText string) {
-	// Parse key=value pairs
 	parts := strings.Split(infoboxText, "|")
 	for _, part := range parts {
 		part = strings.TrimSpace(part)
@@ -126,7 +116,6 @@ func (p *WikiTextParser) parseInfobox(infoboxText string) {
 				value := strings.TrimSpace(kv[1])
 				if key != "" && value != "" {
 					p.doc.Metadata[strings.ToLower(key)] = strings.ToLower(value)
-					// Index key and value
 					p.parseText(key, INFOBOX)
 					p.parseText(value, INFOBOX)
 				}

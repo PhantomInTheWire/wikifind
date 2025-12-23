@@ -15,7 +15,6 @@ import (
 	"github.com/PhantomInTheWire/wikifind/indexer"
 )
 
-// Search engine
 type SearchEngine struct {
 	indexPath string
 	indexes   map[rune]*os.File
@@ -30,7 +29,6 @@ func NewSearchEngine(indexPath string) *SearchEngine {
 }
 
 func (se *SearchEngine) Initialize() error {
-	// Open all index files
 	for char := 'a'; char <= 'z'; char++ {
 		filename := filepath.Join(se.indexPath, fmt.Sprintf("index%c.idx", char))
 		file, err := os.Open(filename)
@@ -54,7 +52,6 @@ func (se *SearchEngine) Search(query string, limit int) ([]SearchResult, error) 
 		return nil, fmt.Errorf("no valid terms in query")
 	}
 
-	// Get posting lists for each term
 	docScores := make(map[string]float64)
 
 	for _, term := range terms {
@@ -78,7 +75,6 @@ func (se *SearchEngine) Search(query string, limit int) ([]SearchResult, error) 
 		}
 	}
 
-	// Sort results by score
 	type docScore struct {
 		docID string
 		score float64
@@ -93,7 +89,6 @@ func (se *SearchEngine) Search(query string, limit int) ([]SearchResult, error) 
 		return results[i].score > results[j].score
 	})
 
-	// Convert to search results
 	var searchResults []SearchResult
 	for i, result := range results {
 		if i >= limit {
@@ -195,7 +190,6 @@ func (se *SearchEngine) getPostings(term string) (map[string]indexer.Posting, er
 		}
 
 		if parts[0] == term {
-			// Parse postings
 			postings := make(map[string]indexer.Posting)
 			for i := 1; i < len(parts); i++ {
 				posting := parts[i]
@@ -207,7 +201,6 @@ func (se *SearchEngine) getPostings(term string) (map[string]indexer.Posting, er
 				docID := posting[:dollarIdx]
 				termData := posting[dollarIdx+1:]
 
-				// Parse posting
 				termParts := strings.Split(termData, "$")
 				if len(termParts) != 2 {
 					continue

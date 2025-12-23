@@ -25,7 +25,6 @@ type TextProcessor interface {
 	Process(ctx context.Context, doc Document) (map[string]Posting, error)
 }
 
-// Core data structures
 type Document struct {
 	ID       string
 	Title    string
@@ -38,7 +37,6 @@ type Posting struct {
 	Frequency int
 }
 
-// XML representation for unmarshaling
 type xmlPage struct {
 	ID    string `xml:"id"`
 	Title string `xml:"title"`
@@ -48,7 +46,6 @@ type xmlPage struct {
 // Field mask type for better type safety
 type FieldMask byte
 
-// XML Parser for Wikipedia dump
 type WikiXMLParser struct {
 	indexPath string
 	index     *InvertedIndex
@@ -93,12 +90,10 @@ func NewIndexWriter(indexPath string) *IndexWriter {
 }
 
 func (w *IndexWriter) WriteIndex(index *InvertedIndex) error {
-	// Create index directory
 	if err := os.MkdirAll(w.indexPath, 0755); err != nil {
 		return err
 	}
 
-	// Write inverted index files (a-z)
 	for char := 'a'; char <= 'z'; char++ {
 		if err := w.writeIndexFile(char, index); err != nil {
 			return err
@@ -119,7 +114,6 @@ func (w *IndexWriter) writeIndexFile(char rune, index *InvertedIndex) error {
 	writer := bufio.NewWriter(file)
 	defer func() { _ = writer.Flush() }()
 
-	// Collect terms starting with this character
 	var terms []string
 	index.mutex.RLock()
 	for term := range index.Index {
@@ -131,7 +125,6 @@ func (w *IndexWriter) writeIndexFile(char rune, index *InvertedIndex) error {
 
 	sort.Strings(terms)
 
-	// Write sorted terms and their posting lists
 	for _, term := range terms {
 		index.mutex.RLock()
 		postings := index.Index[term]
@@ -143,7 +136,6 @@ func (w *IndexWriter) writeIndexFile(char rune, index *InvertedIndex) error {
 		}
 		sort.Strings(docIDs)
 
-		// Write term and postings
 		_, _ = fmt.Fprintf(writer, "%s", term)
 		for _, docID := range docIDs {
 			posting := postings[docID]

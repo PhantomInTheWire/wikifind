@@ -13,7 +13,6 @@ import (
 	"github.com/PhantomInTheWire/wikifind/search"
 )
 
-// Main application
 func main() {
 	if len(os.Args) < 3 {
 		fmt.Println("Usage: wikifind <command> <args>")

@@ -4,7 +4,6 @@ import (
 	"fmt"
 )
 
-// Error types for better error handling
 type ErrorType int
 
 const (
@@ -32,7 +31,6 @@ func (e *WikiError) Unwrap() error {
 	return e.Cause
 }
 
-// Error constructors
 func NewInvalidPathError(path string, cause error) *WikiError {
 	return &WikiError{
 		Type:    ErrInvalidPath,

@@ -6,7 +6,6 @@ import (
 	"io"
 )
 
-// Compression utility
 type Compressor struct{}
 
 func (c *Compressor) Compress(data []byte) ([]byte, error) {
