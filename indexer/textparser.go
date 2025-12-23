@@ -5,17 +5,21 @@ import (
 	"strings"
 )
 
-// Stop words
-var stopWords = map[string]bool{
-	"a": true, "an": true, "and": true, "are": true, "as": true, "at": true,
-	"be": true, "by": true, "for": true, "from": true, "has": true, "he": true,
-	"in": true, "is": true, "it": true, "its": true, "of": true, "on": true,
-	"that": true, "the": true, "to": true, "was": true, "were": true, "will": true,
-	"with": true, "would": true, "you": true, "your": true,
+// Stop words - using empty struct for memory-efficient set
+var stopWords = map[string]struct{}{
+	"a": {}, "an": {}, "and": {}, "are": {}, "as": {}, "at": {},
+	"be": {}, "by": {}, "for": {}, "from": {}, "has": {}, "he": {},
+	"in": {}, "is": {}, "it": {}, "its": {}, "of": {}, "on": {},
+	"that": {}, "the": {}, "to": {}, "was": {}, "were": {}, "will": {},
+	"with": {}, "would": {}, "you": {}, "your": {},
 }
 
 func IsStopWord(word string) bool {
-	return len(word) <= 1 || stopWords[strings.ToLower(word)]
+	if len(word) <= 1 {
+		return true
+	}
+	_, exists := stopWords[strings.ToLower(word)]
+	return exists
 }
 
 // Text parser
