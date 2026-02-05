@@ -1,6 +1,8 @@
 package indexer
 
 import (
+	"fmt"
+	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -51,6 +53,34 @@ func TestInvertedIndex_Add(t *testing.T) {
 			}
 			assert.Equal(t, tt.expected, idx.Index)
 		})
+	}
+}
+
+func TestInvertedIndex_ConcurrentAdd(t *testing.T) {
+	idx := NewInvertedIndex()
+	var wg sync.WaitGroup
+	numGoroutines := 100
+	numAddsPerRoutine := 100
+
+	for i := 0; i < numGoroutines; i++ {
+		wg.Add(1)
+		go func(id int) {
+			defer wg.Done()
+			term := fmt.Sprintf("term-%d", id%10)
+			docID := fmt.Sprintf("doc-%d", id)
+			for j := 0; j < numAddsPerRoutine; j++ {
+				idx.Add(term, docID, Posting{Fields: BODY, Frequency: 1})
+			}
+		}(i)
+	}
+
+	wg.Wait()
+
+	// Verify total count (each docID should have numAddsPerRoutine frequency)
+	for i := 0; i < numGoroutines; i++ {
+		term := fmt.Sprintf("term-%d", i%10)
+		docID := fmt.Sprintf("doc-%d", i)
+		assert.Equal(t, numAddsPerRoutine, idx.Index[term][docID].Frequency)
 	}
 }
 

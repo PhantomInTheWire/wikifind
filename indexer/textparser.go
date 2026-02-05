@@ -37,7 +37,7 @@ func NewWikiTextParser(doc *Document) *WikiTextParser {
 }
 
 func (p *WikiTextParser) Parse() map[string]Posting {
-	defer p.stemmer.Release() // Return stemmer to pool
+	defer p.stemmer.Release()
 
 	p.parseText(p.doc.Title, TITLE)
 

@@ -8,6 +8,13 @@ import (
 	"os"
 )
 
+func NewWikiXMLParser(indexPath string) *WikiXMLParser {
+	return &WikiXMLParser{
+		indexPath: indexPath,
+		index:     NewInvertedIndex(),
+	}
+}
+
 func (parser *WikiXMLParser) Parse(ctx context.Context, xmlPath string) error {
 	file, err := os.Open(xmlPath)
 	if err != nil {

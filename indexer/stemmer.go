@@ -32,7 +32,6 @@ func (s *Stemmer) Release() {
 }
 
 func (s *Stemmer) reset() {
-	s.b = s.b[:0]
 	s.i, s.i_end, s.j, s.k = 0, 0, 0, 0
 }
 
@@ -382,11 +381,7 @@ func (s *Stemmer) step6() {
 }
 
 func (s *Stemmer) Stem(word string) string {
-	s.b = make([]rune, INC)
-	s.i = 0
-	s.i_end = 0
-	s.j = 0
-	s.k = 0
+	s.reset()
 
 	for _, ch := range strings.ToLower(word) {
 		s.add(ch)
